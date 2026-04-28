@@ -3,6 +3,7 @@
 A self-hosted, dockerized video library browser. Point it at a folder of `.mp4` files and get a sleek, searchable UI with thumbnails and timeline navigation.
 
 Yes, I "vibe coded" this. There is no authentication, it was built to run internally on my homelab/server network for quick access and organization of home security videos. <br>
+<br>
 See my [Raspberry Pi Zero to flash drive guide](https://github.com/D00MSDAYDEVICE/How-Tos/blob/main/pi_zero_usb_camera_video_sync.md)
 
 ## Features
