@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VideoVault</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --surface: #111116;
+    --surface2: #18181f;
+    --border: #2a2a35;
+    --accent: #e8c547;
+    --accent2: #c4a030;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --danger: #e05252;
+    --sidebar-w: 220px;
+    --header-h: 64px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* HEADER */
+  header {
+    height: var(--header-h);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .header-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #4ade80;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .rescan-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .rescan-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .rescan-btn.spinning svg { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* SEARCH */
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    max-width: 340px;
+  }
+
+  .search-wrap svg {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+  }
+
+  #search {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px 8px 34px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  #search:focus { border-color: var(--accent); }
+  #search::placeholder { color: var(--muted); }
+
+  /* LAYOUT */
+  .layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* SIDEBAR */
+  aside {
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    flex-shrink: 0;
+    padding: 12px 0;
+  }
+
+  aside::-webkit-scrollbar { width: 4px; }
+  aside::-webkit-scrollbar-track { background: transparent; }
+  aside::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .sidebar-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 8px 16px 4px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .month-group {
+    margin-bottom: 4px;
+  }
+
+  .month-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+    user-select: none;
+  }
+
+  .month-header:hover { background: var(--surface2); }
+  .month-header.active { color: var(--accent); }
+
+  .month-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 15px;
+    letter-spacing: 1.5px;
+  }
+
+  .month-count {
+    font-size: 10px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 10px;
+  }
+
+  .month-days {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.3s ease;
+  }
+
+  .month-days.open { max-height: 1000px; }
+
+  .day-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 16px 5px 28px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--muted);
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+  }
+
+  .day-item:hover { color: var(--text); background: var(--surface2); }
+
+  .day-item.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: rgba(232, 197, 71, 0.06);
+  }
+
+  .day-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    min-width: 22px;
+  }
+
+  .day-vcount {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* MAIN */
+  main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+  }
+
+  main::-webkit-scrollbar { width: 6px; }
+  main::-webkit-scrollbar-track { background: transparent; }
+  main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: 2px;
+    color: var(--accent);
+  }
+
+  .section-sub {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* VIDEO GRID */
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+  }
+
+  .video-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    animation: fadeIn 0.3s ease both;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .video-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent2);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px var(--accent2);
+  }
+
+  .thumb-wrap {
+    position: relative;
+    aspect-ratio: 16/9;
+    background: #0d0d12;
+    overflow: hidden;
+  }
+
+  .thumb-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.4s ease;
+  }
+
+  .video-card:hover .thumb-wrap img { transform: scale(1.04); }
+
+  .thumb-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--border);
+  }
+
+  .play-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+    background: rgba(0,0,0,0.35);
+  }
+
+  .video-card:hover .play-overlay { opacity: 1; }
+
+  .play-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: scale(0.8);
+    transition: transform 0.2s;
+  }
+
+  .video-card:hover .play-btn { transform: scale(1); }
+
+  .play-btn svg { color: #000; margin-left: 3px; }
+
+  .video-info {
+    padding: 12px 14px;
+  }
+
+  .video-name {
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+  }
+
+  .video-meta {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    display: flex;
+    gap: 8px;
+  }
+
+  /* EMPTY / LOADING */
+  .empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 80px 20px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .empty svg { color: var(--border); }
+
+  .empty-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: var(--border);
+  }
+
+  .empty-sub { font-size: 13px; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.92);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+    backdrop-filter: blur(6px);
+  }
+
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal {
+    width: min(90vw, 1100px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transform: scale(0.95);
+    transition: transform 0.25s;
+  }
+
+  .modal-overlay.open .modal { transform: scale(1); }
+
+  .modal-top {
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+
+  .modal-title {
+    font-size: 14px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .modal-close {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.2s;
+    display: flex;
+  }
+
+  .modal-close:hover { color: var(--text); }
+
+  #player {
+    width: 100%;
+    display: block;
+    max-height: 70vh;
+    background: #000;
+  }
+
+  .modal-info {
+    padding: 12px 20px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 16px;
+  }
+
+  /* SCROLLABLE MONTH AREA */
+  .month-section { margin-bottom: 36px; }
+
+  /* Tooltip */
+  .file-path {
+    font-size: 10px;
+    color: var(--muted);
+    opacity: 0.6;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg class="logo-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="6" width="28" height="20" rx="3" stroke="currentColor" stroke-width="2"/>
+      <path d="M13 11.5l7 4.5-7 4.5V11.5z" fill="currentColor"/>
+      <rect x="2" y="6" width="4" height="4" rx="0.5" fill="currentColor" opacity="0.5"/>
+      <rect x="26" y="6" width="4" height="4" rx="0.5" fill="currentColor" opacity="0.5"/>
+      <rect x="2" y="22" width="4" height="4" rx="0.5" fill="currentColor" opacity="0.5"/>
+      <rect x="26" y="22" width="4" height="4" rx="0.5" fill="currentColor" opacity="0.5"/>
+    </svg>
+    VideoVault
+  </div>
+
+  <div class="search-wrap">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input id="search" type="text" placeholder="Search videos..." autocomplete="off"/>
+  </div>
+
+  <div class="header-right">
+    <div class="status-pill">
+      <div class="status-dot"></div>
+      <span id="vid-count">0 videos</span>
+    </div>
+    <button class="rescan-btn" id="rescan-btn" onclick="rescan()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+        <path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+        <path d="M3 21v-5h5"/>
+      </svg>
+      Rescan
+    </button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside id="sidebar">
+    <div class="sidebar-label">Timeline</div>
+    <div id="sidebar-tree"></div>
+  </aside>
+
+  <main id="main-content">
+    <div class="empty" id="loading-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+        <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+      </svg>
+      <div class="empty-title">Loading Vault</div>
+      <div class="empty-sub">Scanning your video library...</div>
+    </div>
+    <div id="video-content" style="display:none;"></div>
+  </main>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-top">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent);flex-shrink:0">
+        <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+      </svg>
+      <div class="modal-title" id="modal-title">Video Title</div>
+      <button class="modal-close" onclick="closeModal()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <video id="player" controls preload="metadata"></video>
+    <div class="modal-info" id="modal-info"></div>
+  </div>
+</div>
+
+<script>
+const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:3001'
+  : `${window.location.protocol}//${window.location.hostname}:3001`;
+
+let allVideos = [];
+let activeFilter = null; // { type: 'month', month, monthNum, year } or { type: 'day', ... }
+let searchQuery = '';
+
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function formatSize(bytes) {
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+  if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+  return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+}
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+async function loadVideos() {
+  try {
+    const res = await fetch(`${API}/api/videos`);
+    allVideos = await res.json();
+    document.getElementById('vid-count').textContent = `${allVideos.length} video${allVideos.length !== 1 ? 's' : ''}`;
+    buildSidebar();
+    renderContent();
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('video-content').style.display = 'block';
+  } catch (e) {
+    document.getElementById('loading-state').innerHTML = `
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+      <div class="empty-title">Cannot Connect</div>
+      <div class="empty-sub">Backend not reachable at ${API}</div>`;
+  }
+}
+
+function groupByMonthDay(videos) {
+  const groups = {};
+  for (const v of videos) {
+    const key = `${v.year}-${String(v.monthNum).padStart(2,'0')}`;
+    if (!groups[key]) groups[key] = { month: v.month, monthNum: v.monthNum, year: v.year, days: {} };
+    const dk = v.day;
+    if (!groups[key].days[dk]) groups[key].days[dk] = [];
+    groups[key].days[dk].push(v);
+  }
+  return Object.entries(groups).sort((a,b) => b[0].localeCompare(a[0])).map(([,v]) => v);
+}
+
+function buildSidebar() {
+  const tree = document.getElementById('sidebar-tree');
+  const groups = groupByMonthDay(allVideos);
+
+  if (!groups.length) { tree.innerHTML = ''; return; }
+
+  let html = '';
+  for (const g of groups) {
+    const totalCount = Object.values(g.days).reduce((s, d) => s + d.length, 0);
+    const mKey = `${g.year}-${g.monthNum}`;
+    const isExpanded = !activeFilter || (activeFilter.year === g.year && activeFilter.monthNum === g.monthNum);
+    html += `
+      <div class="month-group" data-mkey="${mKey}">
+        <div class="month-header ${activeFilter && activeFilter.monthNum === g.monthNum && activeFilter.year === g.year ? 'active' : ''}"
+             onclick="toggleMonth('${mKey}', ${g.monthNum}, '${g.month}', ${g.year})">
+          <span class="month-name">${g.month} ${g.year}</span>
+          <span class="month-count">${totalCount}</span>
+        </div>
+        <div class="month-days ${isExpanded ? 'open' : ''}" id="days-${mKey}">
+    `;
+    const sortedDays = Object.entries(g.days).sort((a,b) => b[0]-a[0]);
+    for (const [day, vids] of sortedDays) {
+      const suffix = ['st','nd','rd'][((day%100)-11)%10 < 3 ? ((day%100)-11)%10 : 3] || 'th';
+      const isActive = activeFilter && activeFilter.type === 'day' && activeFilter.day == day && activeFilter.monthNum === g.monthNum && activeFilter.year === g.year;
+      html += `
+        <div class="day-item ${isActive ? 'active' : ''}" onclick="filterDay(${g.monthNum}, '${g.month}', ${g.year}, ${day})">
+          <span class="day-num">${day}<sup style="font-size:8px">${suffix}</sup></span>
+          <span style="font-size:11px;color:var(--muted)">${vids.length > 1 ? vids.length + ' clips' : '1 clip'}</span>
+        </div>`;
+    }
+    html += `</div></div>`;
+  }
+  tree.innerHTML = html;
+}
+
+function toggleMonth(mKey, monthNum, month, year) {
+  const el = document.getElementById(`days-${mKey}`);
+  const isOpen = el.classList.contains('open');
+  el.classList.toggle('open', !isOpen);
+
+  if (!isOpen) {
+    activeFilter = { type: 'month', monthNum, month, year };
+  } else {
+    activeFilter = null;
+  }
+  buildSidebar();
+  renderContent();
+}
+
+function filterDay(monthNum, month, year, day) {
+  activeFilter = { type: 'day', monthNum, month, year, day };
+  buildSidebar();
+  renderContent();
+}
+
+function getFilteredVideos() {
+  let videos = allVideos;
+
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    videos = videos.filter(v => v.name.toLowerCase().includes(q) || v.relativePath.toLowerCase().includes(q));
+  }
+
+  if (!activeFilter) return videos;
+
+  if (activeFilter.type === 'month') {
+    return videos.filter(v => v.monthNum === activeFilter.monthNum && v.year === activeFilter.year);
+  }
+  if (activeFilter.type === 'day') {
+    return videos.filter(v => v.monthNum === activeFilter.monthNum && v.year === activeFilter.year && v.day == activeFilter.day);
+  }
+  return videos;
+}
+
+function renderContent() {
+  const content = document.getElementById('video-content');
+  const filtered = getFilteredVideos();
+
+  if (!filtered.length) {
+    content.innerHTML = `
+      <div class="empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M10 9l5 3-5 3V9z"/></svg>
+        <div class="empty-title">No Videos Found</div>
+        <div class="empty-sub">${searchQuery ? 'Try a different search term.' : 'Drop some .mp4 files in your video folder.'}</div>
+      </div>`;
+    return;
+  }
+
+  // Group by month for display
+  const groups = groupByMonthDay(filtered);
+  let html = '';
+
+  for (const g of groups) {
+    const allDays = Object.entries(g.days).sort((a,b) => b[0]-a[0]);
+
+    if (activeFilter && activeFilter.type === 'day') {
+      // Single day view
+      const dayVids = g.days[activeFilter.day] || [];
+      if (!dayVids.length) continue;
+      html += renderSection(`${g.month} ${activeFilter.day}, ${g.year}`, dayVids);
+    } else {
+      // Month view — group by day
+      html += `<div class="month-section">`;
+      html += `<div class="section-header">
+        <div class="section-title">${g.month} ${g.year}</div>
+        <div class="section-sub">${Object.values(g.days).reduce((s,d)=>s+d.length,0)} videos</div>
+      </div>`;
+      for (const [day, vids] of allDays) {
+        const suffix = ['st','nd','rd'][((day%100)-11)%10 < 3 ? ((day%100)-11)%10 : 3] || 'th';
+        html += `<div style="margin-bottom:8px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-family:'DM Mono',monospace;padding-bottom:6px;border-bottom:1px solid var(--border);">${MONTHS[g.monthNum]} ${day}${suffix}</div>`;
+        html += renderGrid(vids);
+        html += `<div style="margin-bottom:24px;"></div>`;
+      }
+      html += `</div>`;
+    }
+  }
+
+  content.innerHTML = html;
+}
+
+function renderSection(title, videos) {
+  return `
+    <div class="month-section">
+      <div class="section-header">
+        <div class="section-title">${title}</div>
+        <div class="section-sub">${videos.length} video${videos.length !== 1 ? 's' : ''}</div>
+      </div>
+      ${renderGrid(videos)}
+    </div>`;
+}
+
+function renderGrid(videos) {
+  return `<div class="video-grid">${videos.map(renderCard).join('')}</div>`;
+}
+
+function renderCard(v) {
+  const thumb = v.thumbnailUrl
+    ? `<img src="${API}${v.thumbnailUrl}" alt="${v.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><div class="thumb-placeholder" style="display:none;position:absolute;inset:0;">${filmIcon()}</div>`
+    : `<div class="thumb-placeholder">${filmIcon()}</div>`;
+
+  return `
+    <div class="video-card" onclick="openVideo('${v.id}')">
+      <div class="thumb-wrap">
+        ${thumb}
+        <div class="play-overlay">
+          <div class="play-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="video-info">
+        <div class="video-name" title="${v.name}">${v.name}</div>
+        <div class="video-meta">
+          <span>${formatSize(v.size)}</span>
+          <span>${formatDate(v.mtime)}</span>
+        </div>
+        <div class="file-path" title="${v.relativePath}">${v.relativePath}</div>
+      </div>
+    </div>`;
+}
+
+function filmIcon() {
+  return `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="2" width="20" height="20" rx="3"/><path d="M10 9l5 3-5 3V9z"/></svg>`;
+}
+
+function openVideo(id) {
+  const v = allVideos.find(x => x.id === id);
+  if (!v) return;
+  const player = document.getElementById('player');
+  player.src = `${API}/stream/${id}`;
+  document.getElementById('modal-title').textContent = v.name;
+  document.getElementById('modal-info').innerHTML = `
+    <span>📁 ${v.relativePath}</span>
+    <span>💾 ${formatSize(v.size)}</span>
+    <span>📅 ${formatDate(v.mtime)}</span>`;
+  document.getElementById('modal').classList.add('open');
+  player.play();
+}
+
+function closeModal() {
+  const player = document.getElementById('player');
+  player.pause();
+  player.src = '';
+  document.getElementById('modal').classList.remove('open');
+}
+
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+
+document.getElementById('search').addEventListener('input', e => {
+  searchQuery = e.target.value.trim();
+  renderContent();
+});
+
+async function rescan() {
+  const btn = document.getElementById('rescan-btn');
+  btn.classList.add('spinning');
+  try {
+    await fetch(`${API}/api/rescan`, { method: 'POST' });
+    await loadVideos();
+  } finally {
+    btn.classList.remove('spinning');
+  }
+}
+
+// Poll for changes every 30s
+loadVideos();
+setInterval(loadVideos, 30000);
+</script>
+</body>
+</html>
