@@ -1,5 +1,4 @@
-version: "3.9"
-
+# version: "3.9" - commented out this line as it's obsolete in docker now.
 services:
   backend:
     build: ./backend
