@@ -41,7 +41,8 @@ docker compose up --build -d
 http://localhost:8080
 ```
 
-The backend API runs on port `3001`. The frontend runs on port `8080`.
+The backend API runs on port `3001`. <br>
+The frontend runs on port `8080`.<br>
 If you need to change port 3001, update lines 580 and 581 in /frontend/public/index.html
 ---
 
