@@ -67,11 +67,11 @@ If you need to change port 3001, update lines 580 and 581 in /frontend/public/in
 
 ```
 ┌─────────────┐        ┌──────────────────────────────┐
-│   Browser   │──8080──│  Frontend (nginx)             │
-│             │──3001──│  Backend (Node/Express)       │
-└─────────────┘        │   • ffmpeg thumbnail gen      │
-                       │   • chokidar folder watching  │
-                       │   • range-request streaming   │
+│   Browser   │──8080──│  Frontend (nginx)            │
+│             │──3001──│  Backend (Node/Express)      │
+└─────────────┘        │   • ffmpeg thumbnail gen     │
+                       │   • chokidar folder watching │
+                       │   • range-request streaming  │
                        └──────────────────────────────┘
                                     │
                              /videos (your folder)
