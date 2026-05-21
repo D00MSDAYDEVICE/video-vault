@@ -263,24 +263,50 @@
 
   .section-header {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 12px;
     margin-bottom: 20px;
     padding-bottom: 12px;
     border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
   }
+
+  .section-header:hover .section-title { color: var(--accent2); }
 
   .section-title {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 26px;
     letter-spacing: 2px;
     color: var(--accent);
+    transition: color 0.2s;
   }
 
   .section-sub {
     font-size: 12px;
     color: var(--muted);
     font-family: 'DM Mono', monospace;
+  }
+
+  .section-chevron {
+    margin-left: auto;
+    color: var(--muted);
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+  }
+
+  .section-chevron.collapsed { transform: rotate(-90deg); }
+
+  .section-body {
+    overflow: hidden;
+    transition: max-height 0.35s ease, opacity 0.25s ease;
+    max-height: 20000px;
+    opacity: 1;
+  }
+
+  .section-body.collapsed {
+    max-height: 0 !important;
+    opacity: 0;
   }
 
   /* VIDEO GRID */
@@ -577,12 +603,14 @@
 
 <script>
 const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-  ? 'http://localhost:3001'
-  : `${window.location.protocol}//${window.location.hostname}:3001`;
+  ? 'http://localhost:7005'
+  : `${window.location.protocol}//${window.location.hostname}:7005`;
 
 let allVideos = [];
-let activeFilter = null; // { type: 'month', month, monthNum, year } or { type: 'day', ... }
+let activeFilter = null;
 let searchQuery = '';
+let collapsedMonths = new Set(); // tracks mKeys that are collapsed in sidebar
+let collapsedMainSections = new Set(); // tracks mKeys collapsed in main content
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -594,7 +622,9 @@ function formatSize(bytes) {
 
 function formatDate(iso) {
   const d = new Date(iso);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  return `${date} ${time}`;
 }
 
 async function loadVideos() {
@@ -632,19 +662,25 @@ function buildSidebar() {
 
   if (!groups.length) { tree.innerHTML = ''; return; }
 
+  // On first load, collapse all months except the most recent (index 0)
+  if (collapsedMonths.size === 0 && groups.length > 1) {
+    groups.slice(1).forEach(g => collapsedMonths.add(`${g.year}-${g.monthNum}`));
+  }
+
   let html = '';
   for (const g of groups) {
     const totalCount = Object.values(g.days).reduce((s, d) => s + d.length, 0);
     const mKey = `${g.year}-${g.monthNum}`;
-    const isExpanded = !activeFilter || (activeFilter.year === g.year && activeFilter.monthNum === g.monthNum);
+    const isOpen = !collapsedMonths.has(mKey);
+    const isActiveMonth = activeFilter && activeFilter.monthNum === g.monthNum && activeFilter.year === g.year;
     html += `
       <div class="month-group" data-mkey="${mKey}">
-        <div class="month-header ${activeFilter && activeFilter.monthNum === g.monthNum && activeFilter.year === g.year ? 'active' : ''}"
-             onclick="toggleMonth('${mKey}', ${g.monthNum}, '${g.month}', ${g.year})">
+        <div class="month-header ${isActiveMonth ? 'active' : ''}"
+             onclick="toggleSidebarMonth('${mKey}')">
           <span class="month-name">${g.month} ${g.year}</span>
           <span class="month-count">${totalCount}</span>
         </div>
-        <div class="month-days ${isExpanded ? 'open' : ''}" id="days-${mKey}">
+        <div class="month-days ${isOpen ? 'open' : ''}" id="days-${mKey}">
     `;
     const sortedDays = Object.entries(g.days).sort((a,b) => b[0]-a[0]);
     for (const [day, vids] of sortedDays) {
@@ -661,18 +697,13 @@ function buildSidebar() {
   tree.innerHTML = html;
 }
 
-function toggleMonth(mKey, monthNum, month, year) {
-  const el = document.getElementById(`days-${mKey}`);
-  const isOpen = el.classList.contains('open');
-  el.classList.toggle('open', !isOpen);
-
-  if (!isOpen) {
-    activeFilter = { type: 'month', monthNum, month, year };
+function toggleSidebarMonth(mKey) {
+  if (collapsedMonths.has(mKey)) {
+    collapsedMonths.delete(mKey);
   } else {
-    activeFilter = null;
+    collapsedMonths.add(mKey);
   }
   buildSidebar();
-  renderContent();
 }
 
 function filterDay(monthNum, month, year, day) {
@@ -700,6 +731,19 @@ function getFilteredVideos() {
   return videos;
 }
 
+function toggleMainSection(mKey) {
+  if (collapsedMainSections.has(mKey)) {
+    collapsedMainSections.delete(mKey);
+  } else {
+    collapsedMainSections.add(mKey);
+  }
+  // Toggle just the DOM elements — no full re-render needed
+  const body = document.getElementById(`body-${mKey}`);
+  const chev = document.getElementById(`chev-${mKey}`);
+  if (body) body.classList.toggle('collapsed');
+  if (chev) chev.classList.toggle('collapsed');
+}
+
 function renderContent() {
   const content = document.getElementById('video-content');
   const filtered = getFilteredVideos();
@@ -716,44 +760,60 @@ function renderContent() {
 
   // Group by month for display
   const groups = groupByMonthDay(filtered);
+
+  // On first render, collapse all main sections except the most recent
+  if (collapsedMainSections.size === 0 && groups.length > 1) {
+    groups.slice(1).forEach(g => collapsedMainSections.add(`${g.year}-${g.monthNum}`));
+  }
+
+  const chevronSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>`;
+
   let html = '';
 
   for (const g of groups) {
+    const mKey = `${g.year}-${g.monthNum}`;
     const allDays = Object.entries(g.days).sort((a,b) => b[0]-a[0]);
+    const isCollapsed = collapsedMainSections.has(mKey);
 
     if (activeFilter && activeFilter.type === 'day') {
-      // Single day view
       const dayVids = g.days[activeFilter.day] || [];
       if (!dayVids.length) continue;
-      html += renderSection(`${g.month} ${activeFilter.day}, ${g.year}`, dayVids);
+      html += renderSection(`${g.month} ${activeFilter.day}, ${g.year}`, dayVids, mKey);
     } else {
-      // Month view — group by day
+      const totalVids = Object.values(g.days).reduce((s,d)=>s+d.length,0);
       html += `<div class="month-section">`;
-      html += `<div class="section-header">
+      html += `<div class="section-header" onclick="toggleMainSection('${mKey}')">
         <div class="section-title">${g.month} ${g.year}</div>
-        <div class="section-sub">${Object.values(g.days).reduce((s,d)=>s+d.length,0)} videos</div>
+        <div class="section-sub">${totalVids} video${totalVids !== 1 ? 's' : ''}</div>
+        <div class="section-chevron${isCollapsed ? ' collapsed' : ''}" id="chev-${mKey}">${chevronSvg}</div>
       </div>`;
+      html += `<div class="section-body${isCollapsed ? ' collapsed' : ''}" id="body-${mKey}">`;
       for (const [day, vids] of allDays) {
         const suffix = ['st','nd','rd'][((day%100)-11)%10 < 3 ? ((day%100)-11)%10 : 3] || 'th';
         html += `<div style="margin-bottom:8px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-family:'DM Mono',monospace;padding-bottom:6px;border-bottom:1px solid var(--border);">${MONTHS[g.monthNum]} ${day}${suffix}</div>`;
         html += renderGrid(vids);
         html += `<div style="margin-bottom:24px;"></div>`;
       }
-      html += `</div>`;
+      html += `</div></div>`;
     }
   }
 
   content.innerHTML = html;
 }
 
-function renderSection(title, videos) {
+function renderSection(title, videos, mKey) {
+  const isCollapsed = collapsedMainSections.has(mKey);
+  const chevronSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>`;
   return `
     <div class="month-section">
-      <div class="section-header">
+      <div class="section-header" onclick="toggleMainSection('${mKey}')">
         <div class="section-title">${title}</div>
         <div class="section-sub">${videos.length} video${videos.length !== 1 ? 's' : ''}</div>
+        <div class="section-chevron${isCollapsed ? ' collapsed' : ''}" id="chev-${mKey}">${chevronSvg}</div>
       </div>
-      ${renderGrid(videos)}
+      <div class="section-body${isCollapsed ? ' collapsed' : ''}" id="body-${mKey}">
+        ${renderGrid(videos)}
+      </div>
     </div>`;
 }
 
